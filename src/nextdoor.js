@@ -1,109 +1,121 @@
-const puppeteer = require('puppeteer');
-const fs = require('fs');
-const path = require('path');
-const { username, password } = require('../config/secrets.json');
-const cookies = require('../config/cookies.json');
+const { getPage } = require('./browser');
+const { NEXTDOOR_KEY } = require('./const');
+const { getUser, getPassword, getCookies, setCookies } = require('./login');
 
-const CHROME_PATH = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const NEXTDOOR_URL = 'https://nextdoor.com/for_sale_and_free/?init_source=more_menu';
-const GLOBAL_DELAY = 20;
-const TYPING_DELAY = 5;
+const NEXTDOOR_URL = 'https://nextdoor.com/for_sale_and_free/your_items/';
+const TYPING_DELAY = 0;
 
 const typingConfig = { delay: TYPING_DELAY };
 
-const nextdoorCategories = {
-    luggageCovers: "Luggage Covers",
-};
-
-const nextdoorConditions = {
-    usedLikeNew: "Used - Like New",
-};
-
-const formData = {
-    title: "Test Title",
-    price: "100",
-    category: nextdoorCategories.luggageCovers,
-    condition: nextdoorConditions.usedLikeNew,
-    description: `Test
-next line.
-last line`
-};
-
-function getElementByXpath(path) {
+function waitForXPath(path) {
     return document.evaluate(path, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
 }
 
-const uploadsDir = __dirname + '/../uploads';
-
-const submitnextdoor = async () => {
-
-    let browser = await puppeteer.launch({
-        headless: false,
-        slowMo: GLOBAL_DELAY,
-        executablePath: CHROME_PATH,
-    });
-    const context = browser.defaultBrowserContext();
-    context.overridePermissions("https://www.nextdoor.com", []);
-    let page = await browser.newPage();
-    await page.setDefaultNavigationTimeout(20000);
-    await page.setViewport({ width: 1200, height: 800 });
-
-    if (!Object.keys(cookies).length) {
+const login = async (page) => {
+    try {
         await page.goto("https://www.nextdoor.com/login", { waitUntil: "networkidle2" });
-        await page.type("#id_email", username, typingConfig)
-        await page.type("#id_password", password, typingConfig)
+        await page.type("#id_email", getUser(NEXTDOOR_KEY), typingConfig)
+        await page.type("#id_password", getPassword(NEXTDOOR_KEY), typingConfig)
         await page.click("#signin_button");
+        await page.waitForTimeout(1000);
         await page.waitForNavigation({ waitUntil: "networkidle0" });
-        await page.waitForTimeout(5000);
-        try {
-            await page.waitForSelector('.header-bar-logo');
-        } catch (err) {
-            console.log("failed to login");
-            process.exit(0);
-        }
+        // try {
+        //     await page.waitForSelector('.header-bar-logo');
+        // } catch (err) {
+        //     console.log("failed to login");
+        //     process.exit(0);
+        // }
         let currentCookies = await page.cookies();
-        writeFileSync(__dirname + '/../config/cookies.json', JSON.stringify(currentCookies));
+
+        // save for later
+        setCookies(NEXTDOOR_KEY, currentCookies);
+    } catch (e) {
+        console.log(e);
+        process.exit();
+    }
+}
+
+const submitNextdoor = async (formData) => {
+    const {title, price, category, condition, description, pics} = formData;
+
+    const {page, browser} = await getPage();
+
+    if (!getCookies(NEXTDOOR_KEY).length) {
+        await login(page);
+        await page.goto(NEXTDOOR_URL, { waitUntil: "networkidle2" });
     } else{
         //User Already Logged In
-            await page.setCookie(...cookies);
-            await page.goto("https://www.nextdoor.com/", { waitUntil: "networkidle2" });
+        await page.setCookie(...getCookies(NEXTDOOR_KEY));
+        const response = await page.goto(NEXTDOOR_URL, { waitUntil: "networkidle2" });
+        if (response.status() === 302) {
+            // Cookies were stale
+            await login(page);
+            await page.goto(NEXTDOOR_URL, { waitUntil: "networkidle2" });
+        }
     }
 
-    await page.goto(nextdoor_URL, { waitUntil: "networkidle2" });
+    await page.waitForTimeout(100);
+    await page.click('#main_content');
 
-    await page.type('[aria-label="Title"] input', formData.title, typingConfig)
-    await page.type('[aria-label="Price"] input', formData.price, typingConfig)
-    await page.type('[aria-label="Category"] input', formData.category, typingConfig)
-    await page.type('[aria-label="Description"] textarea', formData.description, typingConfig)
+    console.log('weird donation modal pops up, close it');
+    await page.waitForXPath(`//a[contains(.,'Not interested in donating now')]`);
+    await page.waitForTimeout(1000);
+    const [donateModalClose] = await page.$x(`//a[contains(.,'Not interested in donating now')]`);
+    donateModalClose.click()
 
-    // click once to close the Category dropdown
-    await page.click('[aria-label="Condition"]')
-    await page.click('[aria-label="Condition"]')
-    const [menuItem] = await page.$x(`//div[contains(@role, "menu")]/div/div/div/div/div[contains(., '${formData.condition}')]`);
-    // console.log('Condition menu item:');
-    // console.log(menuItem);
-    menuItem.click();
+    console.log('fill category');
+    // sometimes category button doesn't show up immediately?
+    await page.waitForTimeout(1000);
+    const [categoryButton] = await page.$x(`//span[contains(text(),'Choose category')]`)
+    await categoryButton.click();
+    await page.waitForSelector(`[data-testid="${category}"]`);
+    await page.click(`[data-testid="${category}"]`);
 
-    const filesToUpload = await fs.promises.readdir( uploadsDir );
+    console.log('fill title');
+    await page.waitForTimeout(100);
+    await page.type('[data-testid="classified-title-input"]', title, typingConfig);
 
-    for( const file of filesToUpload ) {
-        const fileToUpload = path.join( uploadsDir, file );
-        const inputUploadHandle = await page.$('input[type=file]');
+    console.log('fill price');
+    await page.waitForTimeout(100);
+    if (price === "0") {
+        await page.click('[name="price"][type="checkbox"]');
+    } else {
+        await page.type('[data-testid="postbox-price-input"]', price, typingConfig);
+    }
 
-        // Sets the value of the file input to fileToUpload
-        inputUploadHandle.uploadFile(fileToUpload);
+    // not last so pics have time to upload
+    console.log('upload pics');
+    for( const pic of pics ) {
+        await page.waitForTimeout(100);
+        const inputUploadHandle = await page.$('input[aria-label="Add photos"]');
+
+        // Sets the value of the file input to pic
+        inputUploadHandle.uploadFile(pic);
         await page.waitForTimeout(500);
     }
 
-    await page.click('[aria-label="Next"]')
-    await page.waitForTimeout(1000);
-    // await page.click('[aria-label="Publish"]')
-    // await page.screenshot({path: 'pic.png'});
+    console.log('fill description');
+    await page.waitForTimeout(100);
+    // await page.evaluate((description) => {
+    //     console.log(description);
+    //     document.querySelector('[data-testid="classified-detail-input"]').value = description;
+    // }, description);
+    await page.type('[data-testid="classified-detail-input"]', description, typingConfig);
 
-    //Close Browser
-    // await browser.close();
+    console.log('submit');
+    await page.waitForTimeout(100);
+    await page.click('button.postbox-submit')
+    await page.waitForTimeout(3000);
+
+    console.log('get the post url');
+    await page.goto(NEXTDOOR_URL, { waitUntil: "networkidle2" });
+    await page.waitForSelector('.fsf-item-detail-link')
+    await page.waitForTimeout(100);
+    const newPostUrl = await page.evaluate(() => document.querySelector('.fsf-item-detail-link').href);
+    browser.close();
+    return newPostUrl;
 };
 
 module.exports = {
-    submitnextdoor,
+    submitNextdoor,
 }

@@ -1,40 +1,41 @@
 const fs = require('fs');
 const prompt = require('prompt');
+const { FACEBOOK_KEY, NEXTDOOR_KEY, CRAIGSLIST_KEY } = require('./const');
 const { CREDENTIALS_FILE, STORAGE_DIR, POSTS_DIR } = require('./storage');
 
 const QUESTIONS = [
     {
         type: 'string',
-        name: 'facebook:username',
+        name: `${FACEBOOK_KEY}:username`,
         description: "What's your facebook username?"
     },
     {
         type: 'string',
-        name: 'facebook:password',
+        name: `${FACEBOOK_KEY}:password`,
         hidden: true,
         replace: '*',
         description: "What's your facebook password?"
     },
     {
         type: 'string',
-        name: 'nextdoor:username',
+        name: `${NEXTDOOR_KEY}:username`,
         description: "What's your nextdoor username?"
     },
     {
         type: 'string',
-        name: 'nextdoor:password',
+        name: `${NEXTDOOR_KEY}:password`,
         hidden: true,
         replace: '*',
         description: "What's your nextdoor password?"
     },
     {
         type: 'string',
-        name: 'craigslist:username',
+        name: `${CRAIGSLIST_KEY}:username`,
         description: "What's your craigslist username?"
     },
     {
         type: 'string',
-        name: 'craigslist:password',
+        name: `${CRAIGSLIST_KEY}:password`,
         hidden: true,
         replace: '*',
         description: "What's your craigslist password?"

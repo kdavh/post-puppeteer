@@ -3,7 +3,7 @@ const fs = require('fs');
 const prompt = require('prompt');
 const yaml = require('js-yaml');
 
-const { POSTS_DIR, postDataFile } = require('./storage');
+const { POSTS_DIR, postDataFile, postDir, postPicsDir } = require('./storage');
 const { categories, conditions } = require('./lookups');
 
 // https://yaml-multiline.info/
@@ -47,11 +47,10 @@ prompt.get(QUESTIONS1).then(answers => {
         console.log("Name must be present, try again.");
         process.exit(0);
     }
-    const postDir = path.join(POSTS_DIR, name);
     try {
-        fs.mkdirSync(postDir);
+        fs.mkdirSync(postDir(name));
     } catch (e) {
-        console.log(`'${postDir}' already exists, please choose a different name`);
+        console.log(`'${postDir(name)}' already exists, please choose a different name`);
         process.exit(0);
     }
 }).then(() => prompt.get(QUESTIONS2)).then((answers) => {
@@ -65,10 +64,15 @@ prompt.get(QUESTIONS1).then(answers => {
         category: category,
         condition: condition,
         description: description,
+        postUrls: {},
     }
 
     const dataFile = postDataFile(name);
     fs.writeFileSync(dataFile, yaml.dump(data));
+    try {
+        fs.mkdirSync(postPicsDir(name));
+    } catch (e) {
+    }
     console.log(`Created '${dataFile}'!`)
     console.log(`Next, edit '${dataFile}', adding proper description, then add post pictures into the same directory.`);
     console.log(`(If you have vscode installed, try: code -n '${dataFile}')`);

@@ -3,20 +3,47 @@ const path = require('path');
 
 const yaml = require('js-yaml');
 
+const { FACEBOOK_KEY, NEXTDOOR_KEY } = require('./const');
 const { submitFacebook } = require('./facebook');
+const { submitNextdoor } = require('./nextdoor');
 const { translateTo } = require('./lookups');
-const { POSTS_DIR, postDataFile } = require('./storage');
+const { POSTS_DIR, postDataFile, postPicsDir } = require('./storage');
 
 myArgs = process.argv.slice(2);
 const [postName] = myArgs;
 
-console.log(`Fetching data from '${postDataFile(postName)}'`);
-formData = yaml.load(fs.readFileSync(postDataFile(postName)));
+const dataFile = postDataFile(postName);
 
-console.log(formData);
+console.log(`Fetching data from '${dataFile}'`);
+formData = yaml.load(fs.readFileSync(dataFile));
+const picsDir = postPicsDir(postName);
+formData.pics = fs.readdirSync(picsDir).map(p => path.join(picsDir, p));
 
-facebookFormData = translateTo('facebook', formData);
+const savePostUrl = (url, formData, dataFile, site) => {
+    console.log(`Saving ${site} post to post data: ${url}`)
+    formData.postUrls = formData.postUrls || {};
+    formData.postUrls[site] = url;
+    fs.writeFileSync(dataFile, yaml.dump(formData));
+}
 
-console.log(facebookFormData);
+const postIfMissing = async (formData, postName, site, submitFunc) => {
+    const dataFile = postDataFile(postName);
 
-// submitFacebook(facebookFormData);
+    if (!formData.postUrls || !formData.postUrls[site]) {
+        console.log(`creating ${site} post for '${postName}'`);
+        const siteFormData = translateTo(site, formData);
+
+        console.log(siteFormData);
+
+        const newPost = await submitFunc(siteFormData);
+        savePostUrl(newPost, formData, dataFile, site);
+    } else {
+        console.log(`${site} post already created for '${postName}', skipping`);
+    }
+}
+
+(async () => {
+    // console.log(formData);
+    postIfMissing(formData, postName, FACEBOOK_KEY, submitFacebook);
+    postIfMissing(formData, postName, NEXTDOOR_KEY, submitNextdoor);
+})();

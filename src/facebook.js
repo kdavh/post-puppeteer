@@ -1,26 +1,25 @@
-const puppeteer = require('puppeteer');
-const fs = require('fs');
-const path = require('path');
+const clipboardy = require('clipboardy');
+
+const { getPage } = require('./browser');
+const { FACEBOOK_KEY } = require('./const');
 const { getUser, getPassword, getCookies, setCookies } = require('./login');
 
-const CHROME_PATH = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const FACEBOOK_URL = 'https://www.facebook.com/marketplace/create/item';
-const GLOBAL_DELAY = 20;
-const TYPING_DELAY = 5;
+const TYPING_DELAY = -1;
 
-const typingConfig = { delay: TYPING_DELAY };
+const typingConfig = {
+    delay: TYPING_DELAY,
+};
 
 function getElementByXpath(path) {
     return document.evaluate(path, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
 }
 
-const uploadsDir = __dirname + '/../uploads';
-
-const loginFacebook = async (page) => {
+const login = async (page) => {
     try {
         await page.goto("https://www.facebook.com/login", { waitUntil: "networkidle2" });
-        await page.type("#email", getUser(), typingConfig)
-        await page.type("#pass", getPassword(), typingConfig)
+        await page.type("#email", getUser(FACEBOOK_KEY), typingConfig)
+        await page.type("#pass", getPassword(FACEBOOK_KEY), typingConfig)
         await page.click("#loginbutton");
         await page.waitForNavigation({ waitUntil: "networkidle0" });
         await page.waitForTimeout(5000);
@@ -32,7 +31,8 @@ const loginFacebook = async (page) => {
         }
         let currentCookies = await page.cookies();
 
-        setCookies('facebook', currentCookies);
+        // save for later
+        setCookies(FACEBOOK_KEY, currentCookies);
     } catch (e) {
         console.log(e);
         process.exit();
@@ -40,52 +40,54 @@ const loginFacebook = async (page) => {
 }
 
 const submitFacebook = async (formData) => {
-    console.log(getUser());
+    const {title, price, category, condition, description, pics} = formData;
 
-    process.exit();
-    let browser = await puppeteer.launch({
-        headless: false,
-        slowMo: GLOBAL_DELAY,
-        executablePath: CHROME_PATH,
-    });
-    const context = browser.defaultBrowserContext();
-    context.overridePermissions("https://www.facebook.com", []);
-    let page = await browser.newPage();
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3419.0 Safari/537.36');
-    await page.setDefaultNavigationTimeout(20000);
-    await page.setViewport({ width: 1200, height: 800 });
+    const {page, browser} = await getPage();
 
-    if (!getCookies()) {
-        await loginFacebook(page);
+    if (!getCookies(FACEBOOK_KEY).length) {
+        await login(page);
         await page.goto(FACEBOOK_URL, { waitUntil: "networkidle2" });
     } else{
         //User Already Logged In
-        await page.setCookie(...getCookies());
+        await page.setCookie(...getCookies(FACEBOOK_KEY));
         const response = await page.goto(FACEBOOK_URL, { waitUntil: "networkidle2" });
         if (response.status() === 302) {
             // Cookies were stale
-            await loginFacebook(page);
+            await login(page);
             await page.goto(FACEBOOK_URL, { waitUntil: "networkidle2" });
         }
     }
 
-    await page.type('[aria-label="Title"] input', formData.title, typingConfig)
-    await page.type('[aria-label="Price"] input', formData.price, typingConfig)
-    await page.type('[aria-label="Category"] input', formData.category, typingConfig)
-    await page.type('[aria-label="Description"] textarea', formData.description, typingConfig)
+    // await page.click('[aria-label="Category"] input')
+    await page.type('[aria-label="Category"] input', category, typingConfig)
+    // one option should be showing, click it
+    // await page.click('[aria-label="1 suggested search"] [role=option]')
 
-    // click once to close the Category dropdown
     await page.click('[aria-label="Condition"]')
-    await page.click('[aria-label="Condition"]')
-    const [menuItem] = await page.$x(`//div[contains(@role, "menu")]/div/div/div/div/div[contains(., '${formData.condition}')]`);
-    // console.log('Condition menu item:');
+    await page.waitForTimeout(100);
+    let [menuItem] = await page.$x(`//*[contains(@role, "menuitemradio")][contains(., '${condition}')]`);
+    // some race condition means this sometimes needs two clicks
+    if (!menuItem) {
+        console.log('Retrying condition menu click');
+        await page.waitForTimeout(100);
+        await page.click('[aria-label="Condition"]')
+        await page.waitForTimeout(100);
+        [menuItem] = await page.$x(`//div[contains(@role, "menuitemradio")][contains(., '${condition}')]`);
+    }
     // console.log(menuItem);
     menuItem.click();
+    await page.waitForTimeout(100);
+    // await page.waitForTimeout(10000);
 
-    const filesToUpload = await fs.promises.readdir( uploadsDir );
+    // if I don't click first, the *second* character of input is missing
+    await page.click('[aria-label="Title"] input');
+    await page.type('[aria-label="Title"] input', title, typingConfig);
+    await page.type('[aria-label="Price"] input', price, typingConfig);
+    // TODO: find a faster way
+    await page.type('[aria-label="Description"] textarea', description, typingConfig)
 
-    for( const file of filesToUpload ) {
-        const fileToUpload = path.join( uploadsDir, file );
+
+    for( const fileToUpload of pics ) {
         const inputUploadHandle = await page.$('input[type=file]');
 
         // Sets the value of the file input to fileToUpload
@@ -94,12 +96,25 @@ const submitFacebook = async (formData) => {
     }
 
     await page.click('[aria-label="Next"]')
-    await page.waitForTimeout(1000);
-    // await page.click('[aria-label="Publish"]')
+    // some sort of async loading thing happens, so wait a healthy amount before trying to press
+    await page.waitForTimeout(4000);
+    await page.click('[aria-label="Publish"]')
     // await page.screenshot({path: 'pic.png'});
 
+    // wait for posting list page to load, signifying done
+    await page.waitForSelector('[aria-label="Mark as Sold"]');
+
+    // get listing url
+    await page.goto('https://www.facebook.com/marketplace/you/selling', { waitUntil: "networkidle2" });
+    await page.click(`[aria-label="${title}"]`);
+
+    await page.waitForSelector('[href*="/marketplace/item/"]');
+    const newPostUrl = await page.evaluate(_ => document.querySelector('[href*="/marketplace/item/"]').href);
+
     //Close Browser
-    // await browser.close();
+    await browser.close();
+
+    return newPostUrl;
 };
 
 module.exports = {
