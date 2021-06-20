@@ -2,6 +2,16 @@
 
 ## How to use
 
+If you don't have `npm` installed (if you don't know, you probably don't), go here https://nodejs.org/en/ and click to download the "LTS" version.
+
+Open the downloaded installer and install.
+
+All following commands are generally run in a shell, i.e. in the Terminal app on a Mac
+
+Install npm
+
+`npm install npm@latest -g`
+
 Download this repository anywhere you'd like.
 
 `git clone https://github.com/kdavh/post-puppeteer && cd post-puppeteer`
