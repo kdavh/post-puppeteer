@@ -1,4 +1,4 @@
-const clipboardy = require('clipboardy');
+// const clipboardy = require('clipboardy');
 
 const { getPage } = require('./browser');
 const { FACEBOOK_KEY } = require('./const');

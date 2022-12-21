@@ -22,7 +22,7 @@ const QUESTIONS2 = [
     {
         type: 'string',
         name: 'price',
-        description: "What's the price?"
+        description: "What's the price? (no $ sign, just the number)",
     },
     {
         type: 'string',
@@ -74,7 +74,7 @@ prompt.get(QUESTIONS1).then(answers => {
     } catch (e) {
     }
     console.log(`Created '${dataFile}'!`)
-    console.log(`Next, edit '${dataFile}', adding proper description, then add post pictures into the same directory.`);
+    console.log(`Next, edit '${dataFile}', adding proper description, then add post pictures into the 'pics' directory located in the same directory.`);
     console.log(`(If you have vscode installed, try: code -n '${dataFile}')`);
     console.log(`When finished, run: npm run post -- "${name}" to post to different websites`);
 })

@@ -3,7 +3,8 @@ const path = require('path');
 
 const yaml = require('js-yaml');
 
-const { FACEBOOK_KEY, NEXTDOOR_KEY } = require('./const');
+const { FACEBOOK_KEY, NEXTDOOR_KEY, CRAIGSLIST_KEY } = require('./const');
+const { submitCraigslist } = require('./craigslist');
 const { submitFacebook } = require('./facebook');
 const { submitNextdoor } = require('./nextdoor');
 const { translateTo } = require('./lookups');
@@ -44,6 +45,7 @@ const postIfMissing = async (formData, postName, site, submitFunc) => {
 
 (async () => {
     // console.log(formData);
-    postIfMissing(formData, postName, FACEBOOK_KEY, submitFacebook);
-    postIfMissing(formData, postName, NEXTDOOR_KEY, submitNextdoor);
+    // await postIfMissing(formData, postName, FACEBOOK_KEY, submitFacebook);
+    // await postIfMissing(formData, postName, NEXTDOOR_KEY, submitNextdoor);
+    await postIfMissing(formData, postName, CRAIGSLIST_KEY, submitCraigslist);
 })();

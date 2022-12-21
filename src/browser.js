@@ -19,6 +19,18 @@ const getPage = async () => {
     return {page, browser};
 };
 
+const clickXpath = async (page, xpath) => {
+    const [el] = await page.$x(xpath);
+    await el.click();
+}
+
+const waitForSelector = async (page, selector, description) => {
+    console.log(`waiting for "${description || ''}" (selector: "${selector}")`);
+    await page.waitForSelector(selector);
+}
+
 module.exports = {
     getPage,
+    clickXpath,
+    waitForSelector,
 }

@@ -19,6 +19,7 @@ const conditions = {
 
 const storeCategories = {
     [FACEBOOK_KEY]: {
+        // TODO: fix all these (only womens-shoes-flats correct right now)
         "womens-clothing": "Women's Clothing",
         "womens-handbags": "Women's Handbags",
         "womens-shoes-flats": "Women's Flats",
@@ -33,11 +34,11 @@ const storeCategories = {
         "baby-clothing-shoes": "Baby & kids",
     },
     [CRAIGSLIST_KEY]: {
-        "womens-clothing": "clothes+acc",
-        "womens-handbags": "clothes+acc",
-        "womens-shoes-flats": "clothes+acc",
-        "nursery-furniture": "baby+kids",
-        "baby-clothing-shoes": "baby+kids",
+        "womens-clothing": "clothing & accessories - by owner",
+        "womens-handbags": "clothing & accessories - by owner",
+        "womens-shoes-flats": "clothing & accessories - by owner",
+        "nursery-furniture": "baby & kid stuff - by owner",
+        "baby-clothing-shoes": "baby & kid stuff - by owner",
     },
 };
 
