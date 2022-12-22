@@ -3,17 +3,14 @@
 const { getPage } = require('./browser');
 const { FACEBOOK_KEY } = require('./const');
 const { getUser, getPassword, getCookies, setCookies } = require('./login');
+const { typeIntoSelector, waitForXPath, pasteIntoSelector, clickSelector, waitForSelector, waitThenClickSelector } = require('./browser');
 
-const FACEBOOK_URL = 'https://www.facebook.com/marketplace/create/item';
+const FACEBOOK_NEW_LISTING_URL = 'https://www.facebook.com/marketplace/create/item';
 const TYPING_DELAY = -1;
 
 const typingConfig = {
     delay: TYPING_DELAY,
 };
-
-function getElementByXpath(path) {
-    return document.evaluate(path, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-}
 
 const login = async (page) => {
     try {
@@ -46,37 +43,39 @@ const submitFacebook = async (formData) => {
 
     if (!getCookies(FACEBOOK_KEY).length) {
         await login(page);
-        await page.goto(FACEBOOK_URL, { waitUntil: "networkidle2" });
+        await page.goto(FACEBOOK_NEW_LISTING_URL, { waitUntil: "networkidle2" });
     } else{
         //User Already Logged In
         await page.setCookie(...getCookies(FACEBOOK_KEY));
-        const response = await page.goto(FACEBOOK_URL, { waitUntil: "networkidle2" });
+        const response = await page.goto(FACEBOOK_NEW_LISTING_URL, { waitUntil: "networkidle2" });
         if (response.status() === 302) {
             // Cookies were stale
             await login(page);
-            await page.goto(FACEBOOK_URL, { waitUntil: "networkidle2" });
+            await page.goto(FACEBOOK_NEW_LISTING_URL, { waitUntil: "networkidle2" });
         }
     }
 
     // await page.click('[aria-label="Category"] input')
-    await page.type('[aria-label="Category"] input', category, typingConfig)
+    await typeIntoSelector(page, '[aria-label="Category"] input', category);
     // one option should be showing, click it
-    // await page.click('[aria-label="1 suggested search"] [role=option]')
+    const categoryEl = await waitForXPath(page, `//*[contains(@role, "option")][contains(., "${category}")]`);
+    await categoryEl.click();
+
 
     await page.click('[aria-label="Condition"]')
-    await page.waitForTimeout(100);
-    let [menuItem] = await page.$x(`//*[contains(@role, "menuitemradio")][contains(., '${condition}')]`);
-    // some race condition means this sometimes needs two clicks
-    if (!menuItem) {
-        console.log('Retrying condition menu click');
-        await page.waitForTimeout(100);
-        await page.click('[aria-label="Condition"]')
-        await page.waitForTimeout(100);
-        [menuItem] = await page.$x(`//div[contains(@role, "menuitemradio")][contains(., '${condition}')]`);
-    }
+    const conditionEl = await waitForXPath(page, `//*[contains(@role, "option")][contains(., "${condition}")]`);
+    // let [menuItem] = await page.$x(`//*[contains(@role, "option")][contains(., "${condition}")]`);
+    // // some race condition means this sometimes needs two clicks
+    // if (!menuItem) {
+    //     console.log('Retrying condition menu click');
+    //     await page.waitForTimeout(100);
+    //     await page.click('[aria-label="Condition"]')
+    //     await page.waitForTimeout(100);
+    //     [menuItem] = await page.$x(`//div[contains(@role, "menuitemradio")][contains(., '${condition}')]`);
+    // }
+    await conditionEl.click();
     // console.log(menuItem);
-    menuItem.click();
-    await page.waitForTimeout(100);
+    // await menuItem.select();
     // await page.waitForTimeout(10000);
 
     // if I don't click first, the *second* character of input is missing
@@ -84,31 +83,33 @@ const submitFacebook = async (formData) => {
     await page.type('[aria-label="Title"] input', title, typingConfig);
     await page.type('[aria-label="Price"] input', price, typingConfig);
     // TODO: find a faster way
-    await page.type('[aria-label="Description"] textarea', description, typingConfig)
+    await pasteIntoSelector(page, '[aria-label="Description"] textarea', description, 'Description field')
 
 
     for( const fileToUpload of pics ) {
         const inputUploadHandle = await page.$('input[type=file]');
 
         // Sets the value of the file input to fileToUpload
-        inputUploadHandle.uploadFile(fileToUpload);
-        await page.waitForTimeout(500);
+        await inputUploadHandle.uploadFile(fileToUpload);
     }
+    await waitThenClickSelector(
+        page, '[aria-label="Next"]:not([aria-disabled="true"])',
+        'Next button (enabled) on the photos and attributes page');
 
-    await page.click('[aria-label="Next"]')
-    // some sort of async loading thing happens, so wait a healthy amount before trying to press
-    await page.waitForTimeout(4000);
-    await page.click('[aria-label="Publish"]')
-    // await page.screenshot({path: 'pic.png'});
+    await waitForSelector(page, '[aria-label="Location"]', 'Location field on the location and shipping page');
+    await clickSelector(page, '[aria-label="Next"]:not([aria-disabled="true"])', 'Next button on the location and shipping page')
+
+
+    await waitThenClickSelector(page, '[aria-label="Publish"]:not([aria-disabled="true"])', 'Publish button on the confirmation / share page');
 
     // wait for posting list page to load, signifying done
-    await page.waitForSelector('[aria-label="Mark as Sold"]');
+    await waitForSelector(page, '[aria-label="Mark as Sold"]', '"Mark as sold" button on the listing completed page');
 
     // get listing url
     await page.goto('https://www.facebook.com/marketplace/you/selling', { waitUntil: "networkidle2" });
-    await page.click(`[aria-label="${title}"]`);
+    await waitThenClickSelector(page, `[aria-label="${title}"]`);
 
-    await page.waitForSelector('[href*="/marketplace/item/"]');
+    await waitForSelector(page, '[href*="/marketplace/item/"]');
     const newPostUrl = await page.evaluate(_ => document.querySelector('[href*="/marketplace/item/"]').href);
 
     //Close Browser

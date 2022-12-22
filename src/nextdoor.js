@@ -1,33 +1,22 @@
 const { getPage } = require('./browser');
 const { NEXTDOOR_KEY } = require('./const');
 const { getUser, getPassword, getCookies, setCookies } = require('./login');
+const { typeIntoSelector, waitForXPath, pasteIntoSelector, clickSelector, waitForSelector, waitThenClickSelector, waitThenclickXPath } = require('./browser');
 
-const NEXTDOOR_URL = 'https://nextdoor.com/for_sale_and_free/your_items/';
-const TYPING_DELAY = 0;
-
-const typingConfig = { delay: TYPING_DELAY };
-
-function waitForXPath(path) {
-    return document.evaluate(path, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-}
+const NEXTDOOR_ITEMS_URL = 'https://nextdoor.com/for_sale_and_free/your_items/';
 
 const login = async (page) => {
     try {
-        await page.goto("https://www.nextdoor.com/login", { waitUntil: "networkidle2" });
-        await page.type("#id_email", getUser(NEXTDOOR_KEY), typingConfig)
-        await page.type("#id_password", getPassword(NEXTDOOR_KEY), typingConfig)
-        await page.click("#signin_button");
-        await page.waitForTimeout(1000);
-        await page.waitForNavigation({ waitUntil: "networkidle0" });
-        // try {
-        //     await page.waitForSelector('.header-bar-logo');
-        // } catch (err) {
-        //     console.log("failed to login");
-        //     process.exit(0);
-        // }
+        await page.goto("https://www.nextdoor.com/login");
+        await waitForSelector(page, "[id=id_email]")
+        await pasteIntoSelector(page, "[id=id_email]", getUser(NEXTDOOR_KEY))
+        await pasteIntoSelector(page, "[id=id_password]", getPassword(NEXTDOOR_KEY))
+        await clickSelector(page, "[id=signin_button]");
+        await waitForSelector(page, "[id=main_content]", "The main content at the top of the page just after login");
         let currentCookies = await page.cookies();
 
         // save for later
+        console.log('saving cookies')
         setCookies(NEXTDOOR_KEY, currentCookies);
     } catch (e) {
         console.log(e);
@@ -42,77 +31,68 @@ const submitNextdoor = async (formData) => {
 
     if (!getCookies(NEXTDOOR_KEY).length) {
         await login(page);
-        await page.goto(NEXTDOOR_URL, { waitUntil: "networkidle2" });
+        await page.goto(NEXTDOOR_ITEMS_URL);
     } else{
         //User Already Logged In
         await page.setCookie(...getCookies(NEXTDOOR_KEY));
-        const response = await page.goto(NEXTDOOR_URL, { waitUntil: "networkidle2" });
+        const response = await page.goto(NEXTDOOR_ITEMS_URL);
         if (response.status() === 302) {
             // Cookies were stale
             await login(page);
-            await page.goto(NEXTDOOR_URL, { waitUntil: "networkidle2" });
+            await page.goto(NEXTDOOR_ITEMS_URL);
         }
     }
 
-    await page.waitForTimeout(100);
-    await page.click('#main_content');
+    // TODO: make this more robust, maybe have a second way of selecting the button so that if one way breaks, we can try the other, and fix it without things first breaking
+    await waitThenclickXPath(
+        page, `//button[contains(.,'Post a listing')]`, 'The "Post a listing" button in the top right of the items list page');
 
     console.log('weird donation modal pops up, close it');
-    await page.waitForXPath(`//a[contains(.,'Not interested in donating now')]`);
-    await page.waitForTimeout(1000);
-    const [donateModalClose] = await page.$x(`//a[contains(.,'Not interested in donating now')]`);
-    donateModalClose.click()
+    await waitThenclickXPath(page, `//a[contains(.,'Not interested in donating now')]`, 'bypass button on weird donation modal');
 
-    console.log('fill category');
     // sometimes category button doesn't show up immediately?
-    await page.waitForTimeout(1000);
-    const [categoryButton] = await page.$x(`//span[contains(text(),'Choose category')]`)
-    await categoryButton.click();
-    await page.waitForSelector(`[data-testid="${category}"]`);
-    await page.click(`[data-testid="${category}"]`);
+    await waitThenClickSelector(page, `button[data-testid="category-selection-field"]`, 'category dropdown menu')
+    await waitThenClickSelector(page, `input[data-testid="${category}"]`, 'category menu item');
 
-    console.log('fill title');
-    await page.waitForTimeout(100);
-    await page.type('[data-testid="classified-title-input"]', title, typingConfig);
+    await pasteIntoSelector(page, '[data-testid="classified-title-input"]', title, 'title input');
 
-    console.log('fill price');
-    await page.waitForTimeout(100);
     if (price === "0") {
-        await page.click('[name="price"][type="checkbox"]');
+        await clickSelector(page, 'input[name="price"][type="checkbox"]', '"it is free" checkbox');
     } else {
-        await page.type('[data-testid="postbox-price-input"]', price, typingConfig);
+        await pasteIntoSelector(page, '[data-testid="postbox-price-input"]', price, 'price input');
     }
 
     // not last so pics have time to upload
-    console.log('upload pics');
+    console.log(`upload pics ${pics}`);
     for( const pic of pics ) {
-        await page.waitForTimeout(100);
-        const inputUploadHandle = await page.$('input[aria-label="Add photos"]');
+        const inputUploadHandle = await page.$('input[id=photo-input]');
 
         // Sets the value of the file input to pic
-        inputUploadHandle.uploadFile(pic);
-        await page.waitForTimeout(500);
+        await inputUploadHandle.uploadFile(pic);
     }
 
-    console.log('fill description');
-    await page.waitForTimeout(100);
-    // await page.evaluate((description) => {
-    //     console.log(description);
-    //     document.querySelector('[data-testid="classified-detail-input"]').value = description;
-    // }, description);
-    await page.type('[data-testid="classified-detail-input"]', description, typingConfig);
+    console.log('wait for pics to fully upload')
+    while (true) {
+        // wait for the image to be fully uploaded, checking for preview with delete button before proceeding
+        if ((await page.$$('button.postbox-remove-attachment')).length >= pics.length) {
+            break;
+        }
+        await page.waitForTimeout(100);
+    }
 
-    console.log('submit');
-    await page.waitForTimeout(100);
-    await page.click('button.postbox-submit')
-    await page.waitForTimeout(3000);
+    await pasteIntoSelector(page, '[data-testid="classified-detail-input"]', description, 'description input');
 
-    console.log('get the post url');
-    await page.goto(NEXTDOOR_URL, { waitUntil: "networkidle2" });
-    await page.waitForSelector('.fsf-item-detail-link')
-    await page.waitForTimeout(100);
-    const newPostUrl = await page.evaluate(() => document.querySelector('.fsf-item-detail-link').href);
-    browser.close();
+    await waitThenClickSelector(page, '[data-testid="content-composer-dialog"] button.postbox-submit', 'submit button');
+
+    await waitForSelector(page, '[id="social-sharing-modal-content"]', 'sharing modal that shows up after submitting a post is successful');
+    await clickSelector(page, '[data-testid="composer-close-button"]', 'close button on sharing modal');
+
+    await page.goto(NEXTDOOR_ITEMS_URL);
+    // TODO: does this handle quotation marks in the title okay? does it need to?
+    await waitForXPath(page, `//a[contains(.,"${title}")]`, 'new post link')
+    const newPostUrl = await page.evaluate(() => document.querySelector('a.fsf-item-detail-link').href);
+    await browser.close();
+
     return newPostUrl;
 };
 

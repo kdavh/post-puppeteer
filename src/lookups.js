@@ -77,12 +77,14 @@ const descriptionFooterLocal = `Porch pickup in North Berkeley + electronic paym
 // TODO: unused until ebay is added
 const descriptionFooterShipping = `I ship promptly with expedited shipping! Please feel free to ask any and all questions as I don't accept returns and always hope for your full satisfaction when you receive the item. I've attempted to disclose or photograph all visible flaws to the best of my abilities.`
 
+// TODO: put footer in a config file in ~/.post-puppeteer/
 const storeDescriptionFooter = {
     [FACEBOOK_KEY]: descriptionFooterLocal,
     [NEXTDOOR_KEY]: descriptionFooterLocal,
     [CRAIGSLIST_KEY]: descriptionFooterLocal,
 }
 
+// TODO: this craigslist switch is implemented in the craigslist.js logic, is it okay to keep there?
 // const storeTransforms = {
 //     [FACEBOOK_KEY]: (formData) => formData,
 //     [NEXTDOOR_KEY]: (formData) => formData,

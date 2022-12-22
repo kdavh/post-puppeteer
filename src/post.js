@@ -45,7 +45,7 @@ const postIfMissing = async (formData, postName, site, submitFunc) => {
 
 (async () => {
     // console.log(formData);
-    // await postIfMissing(formData, postName, FACEBOOK_KEY, submitFacebook);
-    // await postIfMissing(formData, postName, NEXTDOOR_KEY, submitNextdoor);
+    await postIfMissing(formData, postName, FACEBOOK_KEY, submitFacebook);
+    await postIfMissing(formData, postName, NEXTDOOR_KEY, submitNextdoor);
     await postIfMissing(formData, postName, CRAIGSLIST_KEY, submitCraigslist);
 })();

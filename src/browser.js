@@ -19,18 +19,62 @@ const getPage = async () => {
     return {page, browser};
 };
 
-const clickXpath = async (page, xpath) => {
+const waitForXPath = async (page, xpath, description = '') => {
+    console.log(`waiting for (xpath: "${xpath}") (${description})`);
+    return await page.waitForXPath(xpath);
+}
+
+const clickXPath = async (page, xpath, description = '') => {
+    console.log(`finding (xpath: "${xpath}") (${description})`);
     const [el] = await page.$x(xpath);
+    console.log(`clicking (xpath: "${xpath}")`);
     await el.click();
 }
 
-const waitForSelector = async (page, selector, description) => {
-    console.log(`waiting for "${description || ''}" (selector: "${selector}")`);
-    await page.waitForSelector(selector);
+const waitThenclickXPath = async (page, xpath, description = '') => {
+    await waitForXPath(page, xpath, description);
+    await clickXPath(page, xpath, '⇑⇑⇑');
+}
+
+const waitForSelector = async (page, selector, description = '') => {
+    console.log(`waiting for (selector: "${selector}") (${description})`);
+    return await page.waitForSelector(selector);
+}
+
+const clickSelector = async (page, selector, description = '') => {
+    console.log(`clicking (selector: "${selector}") (${description})`);
+    return await page.click(selector);
+}
+
+const waitThenClickSelector = async (page, selector, description = '') => {
+    await waitForSelector(page, selector, description);
+    await clickSelector(page, selector, '⇑⇑⇑');
+}
+
+const pasteIntoSelector = async (page, selector, text, description = '') => {
+    console.log(`pasting text into (selector: "${selector}") (${description})`);
+    await page.focus(selector);
+    await page.keyboard.sendCharacter(text);
+}
+
+const typeIntoSelector = async (page, selector, text, description = '') => {
+    console.log(`typing text into (selector: "${selector}") (${description})`);
+    await page.type(selector, text)
+}
+
+// Useful??
+function getElementByXpath(path) {
+    return document.evaluate(path, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
 }
 
 module.exports = {
     getPage,
-    clickXpath,
+    clickXPath,
     waitForSelector,
+    pasteIntoSelector,
+    typeIntoSelector,
+    waitForXPath,
+    clickSelector,
+    waitThenClickSelector,
+    waitThenclickXPath,
 }

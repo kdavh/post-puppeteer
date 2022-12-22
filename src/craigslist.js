@@ -1,4 +1,4 @@
-const { getPage, clickXpath, waitForSelector } = require('./browser');
+const { getPage, clickXPath, waitForSelector, clickSelector, waitThenClickSelector, pasteIntoSelector, waitForXPath, waitThenclickXPath } = require('./browser');
 const { CRAIGSLIST_KEY } = require('./const');
 const { getUser, getPassword, getCookies, setCookies } = require('./login');
 
@@ -48,64 +48,43 @@ const submitCraigslist = async (formData) => {
         }
     }
 
-    console.log('click the post "go" button');
-    await page.click('button[value=go]');
-    await page.waitForXPath(`//label[contains(.,'east bay area')]`);
+    await waitThenClickSelector(page, 'button[value=go]', 'post "go" button');
 
-    console.log('choose east bay');
-    await clickXpath(page, `//label[contains(.,'east bay area')]`);
-    await page.waitForXPath(`//label[contains(.,'berkeley')]`);
+    await waitThenclickXPath(page, `//label[contains(.,'east bay area')]`, 'east bay location category');
 
-    console.log('choose berkeley');
-    await clickXpath(page, `//label[contains(.,'berkeley')]`);
-    await page.waitForXPath(`//label[contains(.,'for sale by owner')]`);
+    await waitThenclickXPath(page, `//label[contains(.,'berkeley')]`, 'berkeley location category');
 
-    console.log('choose for sale by owner');
-    await clickXpath(page, `//label[contains(.,'for sale by owner')]`);
-    await page.waitForXPath(`//label[contains(.,'free stuff')]`);
+    await waitThenclickXPath(page, `//label[contains(.,'for sale by owner')]`, 'for sale by owner category');
 
-    console.log(`choose category '${category}'`);
+    await waitForXPath(page, `//label[contains(.,'free stuff')]`, 'categories list');
     if (price === "0") {
-        await clickXpath(page, `//label[contains(.,'free stuff')]`);
+        await clickXPath(page, `//label[contains(.,'free stuff')]`);
     } else {
-        await clickXpath(page, `//label[contains(.,'${category}')]`);
+        await clickXPath(page, `//label[contains(.,'${category}')]`);
     }
 
     await page.waitForSelector('input[name="PostingTitle"]');
-
-    console.log('fill title');
-    await page.focus('input[name="PostingTitle"]');
-    await page.keyboard.sendCharacter(title);
+    await pasteIntoSelector(page, 'input[name="PostingTitle"]', title, 'title input');
     // await page.type('input[name="PostingTitle"]', title, typingConfig);
 
-    console.log('fill price');
     if (price !== "0") {
-        await page.type('input[name="price"]', price, typingConfig);
+        await pasteIntoSelector(page, 'input[name="price"]', price, 'price input');
     }
 
-    // console.log('fill geo area');
-    // await page.type('input[name="geographic_area"]', ' ', typingConfig);
+    await pasteIntoSelector(page, 'input[name="postal"]', HOME_POSTAL_CODE, 'postal code input');
 
-    console.log('fill postal code');
-    await page.type('input[name="postal"]', HOME_POSTAL_CODE, typingConfig);
-
-    console.log('fill description');
-    await page.focus('textarea[name="PostingBody"]');
-    await page.keyboard.sendCharacter(description);
+    await pasteIntoSelector(page, 'textarea[name="PostingBody"]', description, 'post description input');
 
     // TODO: condition
 
     console.log('click "go" to go to next page');
-    await page.click('button[name="go"][value="continue"]');
-    await page.waitForSelector('button.continue');
+    await clickSelector(page, 'button[name="go"][value="continue"]', 'button to continue to location options');
 
     // TODO??: fill in cross street
-    console.log('skipping cross street');
-    console.log('click "continue" to go to next page');
-    await page.click('button.continue');
+    await waitThenClickSelector(page, 'button.continue', 'button to continue to images');
 
-    await page.waitForSelector('div[id=uploader]');
-    await page.waitForSelector('input[type=file]');
+    await waitForSelector(page, 'div[id=uploader]', 'uploader div');
+    await waitForSelector(page, 'input[type=file]', 'uploader input');
     // not last so pics have time to upload
     console.log('upload pics');
     for( const pic of pics ) {
@@ -123,23 +102,12 @@ const submitCraigslist = async (formData) => {
         await page.waitForTimeout(100);
     }
 
-    console.log('wait for button "Done with Images"');
-    await page.waitForSelector('button[name="go"][type="submit"][value="Done with Images"]');
-    console.log('click button "Done with Images"');
-    await page.click('button[name="go"][type="submit"][value="Done with Images"]');
+    await waitThenClickSelector(page, 'button[name="go"][type="submit"][value="Done with Images"]', 'done with images button');
 
-    await page.waitForSelector('button[name="go"][value="Continue"]');
+    await waitThenClickSelector(page, 'button[name="go"][value="Continue"]', 'submit post');
 
-    console.log('submit');
-    await page.click('button[name="go"][value="Continue"]');
-    // TODO: instead wait for next page to load, and check for success message like text "Thanks for posting! We really appreciate it."
-    await page.waitForTimeout(1000);
-
-    console.log('get the post url');
-    await page.goto(CRAIGSLIST_URL, { waitUntil: "networkidle2" });
-    await waitForSelector(page, 'tr.posting-row', 'active posts page load')
-    // relies on the most recent post being the one we just made, and being first in page order
-    const newPostUrl = await page.evaluate(() => document.querySelector('td.title.active').querySelector('a').href);
+    await waitForSelector(page, 'a[href*="craigslist.org/manage/"]', 'link to manage the new post')
+    const newPostUrl = await page.evaluate(() => document.querySelector('a[href*="craigslist.org/manage/"]').href);
     await browser.close();
     return newPostUrl;
 };
