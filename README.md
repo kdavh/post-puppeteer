@@ -8,9 +8,9 @@ Open the downloaded installer and install.
 
 All following commands are generally run in a shell, i.e. in the Terminal app on a Mac
 
-Install npm
+Install npm at a specific version (this is important, as the latest version of npm may not be compatible with the dependencies of this project)
 
-`npm install npm@latest -g`
+`npm install npm@18.12.1 -g`
 
 Download this repository anywhere you'd like.
 
