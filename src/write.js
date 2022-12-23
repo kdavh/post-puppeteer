@@ -74,7 +74,9 @@ prompt.get(QUESTIONS1).then(answers => {
     } catch (e) {
     }
     console.log(`Created '${dataFile}'!`)
-    console.log(`Next, edit '${dataFile}', adding proper description, then add post pictures into the 'pics' directory located in the same directory.`);
+    console.log(`Next, edit '${dataFile}', adding proper description, then add post pictures into the 'pics' directory located in the same directory.  Note: `);
     console.log(`(If you have vscode installed, try: code -n '${dataFile}')`);
+    // TODO: make the command easier to read, put on its own line, make it a different color
+
     console.log(`When finished, run: npm run post -- "${name}" to post to different websites`);
 })

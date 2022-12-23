@@ -61,7 +61,6 @@ const submitCraigslist = async (formData) => {
     if (price === "0") {
         await clickXPath(page, `//label[contains(.,'free stuff')]`);
     } else {
-        // TODO: FIX Chi chose 'clothing and accessories -- by owner' but it chose 'antiques' instead
         await clickXPath(page, `//label[@class="radio-option"][contains(.,'${category}')]`);
     }
 
@@ -87,7 +86,6 @@ const submitCraigslist = async (formData) => {
 
     await clickSelector(page, 'button[name="go"][value="continue"]', 'button to continue to location options');
 
-    // TODO: FIX, Chi wants to fill in cross street.
     await waitThenClickSelector(page, 'button.continue', 'button to continue to images');
 
     await waitForSelector(page, 'div[id=uploader]', 'uploader div');

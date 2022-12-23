@@ -55,36 +55,19 @@ const submitFacebook = async (formData) => {
         }
     }
 
-    // await page.click('[aria-label="Category"] input')
     await typeIntoSelector(page, '[aria-label="Category"] input', category);
     // one option should be showing, click it
     const categoryEl = await waitForXPath(page, `//*[contains(@role, "option")][contains(., "${category}")]`);
     await categoryEl.click();
 
 
-    await page.click('[aria-label="Condition"]')
+    await clickSelector(page, '[aria-label="Condition"]', 'condition dropdown');
     const conditionEl = await waitForXPath(page, `//*[contains(@role, "option")][contains(., "${condition}")]`);
-    // let [menuItem] = await page.$x(`//*[contains(@role, "option")][contains(., "${condition}")]`);
-    // // some race condition means this sometimes needs two clicks
-    // if (!menuItem) {
-    //     console.log('Retrying condition menu click');
-    //     await page.waitForTimeout(100);
-    //     await page.click('[aria-label="Condition"]')
-    //     await page.waitForTimeout(100);
-    //     [menuItem] = await page.$x(`//div[contains(@role, "menuitemradio")][contains(., '${condition}')]`);
-    // }
     await conditionEl.click();
-    // console.log(menuItem);
-    // await menuItem.select();
-    // await page.waitForTimeout(10000);
 
-    // if I don't click first, the *second* character of input is missing
-    await page.click('[aria-label="Title"] input');
-    await page.type('[aria-label="Title"] input', title, typingConfig);
-    await page.type('[aria-label="Price"] input', price, typingConfig);
-    // TODO: find a faster way
+    await pasteIntoSelector(page, '[aria-label="Title"] input', title, 'title input');
+    await pasteIntoSelector(page, '[aria-label="Price"] input', price, 'price input');
     await pasteIntoSelector(page, '[aria-label="Description"] textarea', description, 'Description field')
-
 
     for( const fileToUpload of pics ) {
         const inputUploadHandle = await page.$('input[type=file]');
