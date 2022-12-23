@@ -1,11 +1,15 @@
 const { FACEBOOK_KEY, NEXTDOOR_KEY, CRAIGSLIST_KEY } = require('./const');
 
+const WOMENS_PANTS = "womens-pants"
+const WOMENS_HANDBAGS = "womens-handbags"
+const WOMENS_SHOES_FLATS = "womens-shoes-flats"
+const BABY_CLOTHING_SHOES = "baby-clothing-shoes"
+
 const categories = {
-    "womens-clothing": true,
-    "womens-handbags": true,
-    "womens-shoes-flats": true,
-    "nursery-furniture": true,
-    "baby-clothing-shoes": true,
+    [WOMENS_PANTS]: true,
+    [WOMENS_HANDBAGS]: true,
+    [WOMENS_SHOES_FLATS]: true,
+    [BABY_CLOTHING_SHOES]: true,
 };
 
 const conditions = {
@@ -19,26 +23,22 @@ const conditions = {
 
 const storeCategories = {
     [FACEBOOK_KEY]: {
-        // TODO: fix all these (only womens-shoes-flats correct right now)
-        "womens-clothing": "Women's Clothing",
-        "womens-handbags": "Women's Handbags",
-        "womens-shoes-flats": "Women's Flats",
-        "nursery-furniture": "Nursery Furniture",
-        "baby-clothing-shoes": "Baby Clothing & Shoes",
+        [WOMENS_PANTS]: "Women's Pants",
+        [WOMENS_HANDBAGS]: "Other Women's Accessories",
+        [WOMENS_SHOES_FLATS]: "Women's Flats",
+        [BABY_CLOTHING_SHOES]: "Other Baby Clothing & Shoes",
     },
     [NEXTDOOR_KEY]: {
-        "womens-clothing": "Clothing & accessories",
-        "womens-handbags": "Clothing & accessories",
-        "womens-shoes-flats": "Clothing & accessories",
-        "nursery-furniture": "Baby & kids",
-        "baby-clothing-shoes": "Baby & kids",
+        [WOMENS_PANTS]: "Clothing & accessories",
+        [WOMENS_HANDBAGS]: "Clothing & accessories",
+        [WOMENS_SHOES_FLATS]: "Clothing & accessories",
+        [BABY_CLOTHING_SHOES]: "Baby & kids",
     },
     [CRAIGSLIST_KEY]: {
-        "womens-clothing": "clothing & accessories - by owner",
-        "womens-handbags": "clothing & accessories - by owner",
-        "womens-shoes-flats": "clothing & accessories - by owner",
-        "nursery-furniture": "baby & kid stuff - by owner",
-        "baby-clothing-shoes": "baby & kid stuff - by owner",
+        [WOMENS_PANTS]: "clothing & accessories - by owner",
+        [WOMENS_HANDBAGS]: "clothing & accessories - by owner",
+        [WOMENS_SHOES_FLATS]: "clothing & accessories - by owner",
+        [BABY_CLOTHING_SHOES]: "baby & kid stuff - by owner",
     },
 };
 
@@ -100,11 +100,11 @@ const storeDescriptionFooter = {
 const translateTo = (store, formData) => {
     const category = storeCategories[store][formData.category];
     if (category === undefined) {
-        throw Error(`${store} category missing for ` + formData.category)
+        throw Error(`${store} category missing for "${formData.category}"`)
     }
     const condition = storeConditions[store][formData.condition];
     if (condition === undefined) {
-        throw Error(`${store} condition missing for ` + formData.condition)
+        throw Error(`${store} condition missing for  "${formData.condition}"`)
     }
 
     const description = formData.description + `\n\n${storeDescriptionFooter[store]}`
