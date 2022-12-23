@@ -50,6 +50,7 @@ const submitCraigslist = async (formData) => {
 
     await waitThenClickSelector(page, 'button[value=go]', 'post "go" button');
 
+    // TODO: assumes user has default area chosen.  If they don't, this will fail.
     await waitThenclickXPath(page, `//label[contains(.,'east bay area')]`, 'east bay location category');
 
     await waitThenclickXPath(page, `//label[contains(.,'berkeley')]`, 'berkeley location category');
@@ -60,7 +61,8 @@ const submitCraigslist = async (formData) => {
     if (price === "0") {
         await clickXPath(page, `//label[contains(.,'free stuff')]`);
     } else {
-        await clickXPath(page, `//label[contains(.,'${category}')]`);
+        // TODO: FIX Chi chose 'clothing and accessories -- by owner' but it chose 'antiques' instead
+        await clickXPath(page, `//label[@class="radio-option"][contains(.,'${category}')]`);
     }
 
     await page.waitForSelector('input[name="PostingTitle"]');
@@ -77,14 +79,20 @@ const submitCraigslist = async (formData) => {
 
     // TODO: condition
 
-    console.log('click "go" to go to next page');
+    // TODO: add these values to preferences.yaml
+    await clickSelector(page, 'input[type="checkbox"][name="show_address_ok"][value="1"]', 'show address checkbox');
+    await pasteIntoSelector(page, 'input[name="xstreet0"]', 'Rose', 'cross street 0 input');
+    await pasteIntoSelector(page, 'input[name="xstreet1"]', 'Sacramento', 'cross street 1 input');
+    await pasteIntoSelector(page, 'input[name="city"]', 'Berkeley', 'city input');
+
     await clickSelector(page, 'button[name="go"][value="continue"]', 'button to continue to location options');
 
-    // TODO??: fill in cross street
+    // TODO: FIX, Chi wants to fill in cross street.
     await waitThenClickSelector(page, 'button.continue', 'button to continue to images');
 
     await waitForSelector(page, 'div[id=uploader]', 'uploader div');
     await waitForSelector(page, 'input[type=file]', 'uploader input');
+
     // not last so pics have time to upload
     console.log('upload pics');
     for( const pic of pics ) {
