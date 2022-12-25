@@ -69,11 +69,20 @@ const submitFacebook = async (formData) => {
     await pasteIntoSelector(page, '[aria-label="Price"] input', price, 'price input');
     await pasteIntoSelector(page, '[aria-label="Description"] textarea', description, 'Description field')
 
-    for( const fileToUpload of pics ) {
+    for( const i in pics ) {
         const inputUploadHandle = await page.$('input[type=file]');
 
         // Sets the value of the file input to fileToUpload
-        await inputUploadHandle.uploadFile(fileToUpload);
+        await inputUploadHandle.uploadFile(pics[i]);
+        // TODO: bug where the UI freezes, something wrong with jpg / jpeg.  Even when I resize in Preview to smaller quality
+        while (true) {
+            await page.waitForTimeout(100);
+            // wait for the image to be fully uploaded, checking for preview with delete button before proceeding.  This may not be needed as the issue is jpg breakage, but keeping in for now.
+            if ((await page.$$('[role="progressbar"][aria-label="Loading..."]')).length === 0) {
+                break;
+            }
+            console.log(`waiting for image ${i} to show as uploaded...`)
+        }
     }
     await waitThenClickSelector(
         page, '[aria-label="Next"]:not([aria-disabled="true"])',
@@ -81,7 +90,6 @@ const submitFacebook = async (formData) => {
 
     await waitForSelector(page, '[aria-label="Location"]', 'Location field on the location and shipping page');
     await clickSelector(page, '[aria-label="Next"]:not([aria-disabled="true"])', 'Next button on the location and shipping page')
-
 
     await waitThenClickSelector(page, '[aria-label="Publish"]:not([aria-disabled="true"])', 'Publish button on the confirmation / share page');
 
