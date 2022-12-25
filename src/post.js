@@ -20,7 +20,10 @@ formData = yaml.load(fs.readFileSync(dataFile));
 const picsDir = postPicsDir(postName);
 // TODO: this updates the pics array with all pics in the post's pics dir. We need to only add things like this transiently,
 // we don't want to save this to the post data file.  differentiate between transient and persistent data somehow.
-formData.pics = fs.readdirSync(picsDir).map(p => path.join(picsDir, p));
+formData.pics = fs.readdirSync(picsDir)
+    // ignore hidden files
+    .filter(p => p[0] !== '.')
+    .map(p => path.join(picsDir, p));
 
 const savePostUrl = (url, formData, dataFile, site) => {
     console.log(`Saving ${site} post to post data: ${url}`)
