@@ -31,7 +31,7 @@ const storeCategories = {
         [WOMENS_HANDBAGS]: "Other Women's Accessories",
         [WOMENS_SHOES_FLATS]: "Women's Flats",
         [BABY_CLOTHING_SHOES]: "Girl's Dresses", // "Other Baby Clothing & Shoes",
-        [OTHER]: "Girl's Dresses",
+        [OTHER]: "Women's Dresses",
         [MOTORCYCLES]: {
             url: "https://www.facebook.com/marketplace/create/vehicle",
             // TODO: year, make, model
@@ -85,7 +85,7 @@ const storeConditions = {
     },
 }
 
-const descriptionFooterLocal = `Porch pickup in North Berkeley + electronic payment. Please message me with a day and time window you'd be available to pick up. Unfortunately I won't respond if you just ask if the item is available. I'll take the listing down when it's sold.`
+const descriptionFooterLocal = `Porch pickup in North Berkeley near Monterey Market + electronic payment preferred. Please message me with a day and time window you'd be available to pick up, thanks! I won't respond if you just ask if the item is available but I will take the listing down when it's sold.`
 
 // TODO: unused until ebay is added
 const descriptionFooterShipping = `I ship promptly with expedited shipping! Please feel free to ask any and all questions as I don't accept returns and always hope for your full satisfaction when you receive the item. I've attempted to disclose or photograph all visible flaws to the best of my abilities.`
