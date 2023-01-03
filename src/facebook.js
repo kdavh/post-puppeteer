@@ -2,6 +2,7 @@
 
 const { getPage } = require('./browser');
 const { FACEBOOK_KEY } = require('./const');
+const { categories } = require('./lookups');
 const { getUser, getPassword, getCookies, setCookies } = require('./login');
 const { typeIntoSelector, waitForXPath, pasteIntoSelector, clickSelector, waitForSelector, waitThenClickSelector } = require('./browser');
 
@@ -39,19 +40,25 @@ const login = async (page) => {
 const submitFacebook = async (formData) => {
     const {title, price, category, condition, description, pics} = formData;
 
+    url = FACEBOOK_NEW_LISTING_URL;
+    // TODO: this needs more work to work.  This form doesn't have category, instead make, model, year
+    if (category === categories['motorcycles']) {
+        url = 'https://www.facebook.com/marketplace/create/vehicle';
+    }
+
     const {page, browser} = await getPage();
 
     if (!getCookies(FACEBOOK_KEY).length) {
         await login(page);
-        await page.goto(FACEBOOK_NEW_LISTING_URL, { waitUntil: "networkidle2" });
+        await page.goto(url, { waitUntil: "networkidle2" });
     } else{
         //User Already Logged In
         await page.setCookie(...getCookies(FACEBOOK_KEY));
-        const response = await page.goto(FACEBOOK_NEW_LISTING_URL, { waitUntil: "networkidle2" });
+        const response = await page.goto(url, { waitUntil: "networkidle2" });
         if (response.status() === 302) {
             // Cookies were stale
             await login(page);
-            await page.goto(FACEBOOK_NEW_LISTING_URL, { waitUntil: "networkidle2" });
+            await page.goto(url, { waitUntil: "networkidle2" });
         }
     }
 

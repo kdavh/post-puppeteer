@@ -4,12 +4,16 @@ const WOMENS_PANTS = "womens-pants"
 const WOMENS_HANDBAGS = "womens-handbags"
 const WOMENS_SHOES_FLATS = "womens-shoes-flats"
 const BABY_CLOTHING_SHOES = "baby-clothing-shoes"
+const MOTORCYCLES = "motorcycles"
+const OTHER = "other"
 
 const categories = {
     [WOMENS_PANTS]: true,
     [WOMENS_HANDBAGS]: true,
     [WOMENS_SHOES_FLATS]: true,
     [BABY_CLOTHING_SHOES]: true,
+    [MOTORCYCLES]: true,
+    [OTHER]: true,
 };
 
 const conditions = {
@@ -26,19 +30,28 @@ const storeCategories = {
         [WOMENS_PANTS]: "Women's Pants",
         [WOMENS_HANDBAGS]: "Other Women's Accessories",
         [WOMENS_SHOES_FLATS]: "Women's Flats",
-        [BABY_CLOTHING_SHOES]: "Other Baby Clothing & Shoes",
+        [BABY_CLOTHING_SHOES]: "Girl's Dresses", // "Other Baby Clothing & Shoes",
+        [OTHER]: "Girl's Dresses",
+        [MOTORCYCLES]: {
+            url: "https://www.facebook.com/marketplace/create/vehicle",
+            // TODO: year, make, model
+        },
     },
     [NEXTDOOR_KEY]: {
         [WOMENS_PANTS]: "Clothing & accessories",
         [WOMENS_HANDBAGS]: "Clothing & accessories",
         [WOMENS_SHOES_FLATS]: "Clothing & accessories",
         [BABY_CLOTHING_SHOES]: "Baby & kids",
+        [OTHER]: "Other",
+        [MOTORCYCLES]: "Automotive",
     },
     [CRAIGSLIST_KEY]: {
         [WOMENS_PANTS]: "clothing & accessories - by owner",
         [WOMENS_HANDBAGS]: "clothing & accessories - by owner",
         [WOMENS_SHOES_FLATS]: "clothing & accessories - by owner",
         [BABY_CLOTHING_SHOES]: "baby & kid stuff - by owner",
+        [OTHER]: "general for sale - by owner",
+        [MOTORCYCLES]: "Automotive",
     },
 };
 
