@@ -25,6 +25,13 @@ formData.pics = fs.readdirSync(picsDir)
     .filter(p => p[0] !== '.')
     .map(p => path.join(picsDir, p));
 
+for (p of formData.pics) {
+    // Facebook in chrome automated mode freezes on jpgs
+    if (! /.png$/.test(p)) {
+        console.log(`Facebook freezes uploading jpgs, please convert all to png`);;
+    }
+}
+
 const savePostUrl = (url, formData, dataFile, site) => {
     console.log(`Saving ${site} post to post data: ${url}`)
     formData.postUrls = formData.postUrls || {};
