@@ -32,3 +32,7 @@ Write your post:
 Post your post on websites:
 
 `npm run post -- "Your Post Name"`
+
+
+NOTE:
+- You cannot use jpg / jpeg images, stick to png images.
