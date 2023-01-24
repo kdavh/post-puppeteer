@@ -25,7 +25,7 @@ Initialize the configurations (will live in ~/.post-puppeteer)
 
 ## Use It
 
-Write your first post:
+Write your post:
 
 `npm run write` and follow the prompts.
 
