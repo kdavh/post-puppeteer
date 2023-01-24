@@ -15,10 +15,10 @@ const typingConfig = { delay: TYPING_DELAY };
 const login = async (page) => {
     try {
         await page.goto("https://accounts.craigslist.org/login", { waitUntil: "networkidle2" });
-        await page.type("#inputEmailHandle", getUser(CRAIGSLIST_KEY), typingConfig)
-        await page.type("#inputPassword", getPassword(CRAIGSLIST_KEY), typingConfig)
-        await page.click("#login");
-        await page.waitForSelector('button[value=go]');
+        await pasteIntoSelector(page, "#inputEmailHandle", getUser(CRAIGSLIST_KEY), 'email/username input');
+        await pasteIntoSelector(page, "#inputPassword", getPassword(CRAIGSLIST_KEY), 'password input')
+        await clickSelector(page, "#login", 'login button');
+        await waitForSelector(page, 'button[value=go]', 'post "go" button');
         let currentCookies = await page.cookies();
 
         // save for later
@@ -36,15 +36,16 @@ const submitCraigslist = async (formData) => {
 
     if (!getCookies(CRAIGSLIST_KEY).length) {
         await login(page);
-        await page.goto(CRAIGSLIST_URL, { waitUntil: "networkidle2" });
+        await page.goto(CRAIGSLIST_URL);
     } else{
         //User Already Logged In
         await page.setCookie(...getCookies(CRAIGSLIST_KEY));
-        const response = await page.goto(CRAIGSLIST_URL, { waitUntil: "networkidle2" });
-        if (response.status() === 302) {
+        const response = await page.goto(CRAIGSLIST_URL);
+        // redirect is transparent to puppeteer, so we have to check the end url
+        if (response.url().startsWith('https://accounts.craigslist.org/login?')) {
             // Cookies were stale
             await login(page);
-            await page.goto(CRAIGSLIST_URL, { waitUntil: "networkidle2" });
+            await page.goto(CRAIGSLIST_URL);
         }
     }
 
