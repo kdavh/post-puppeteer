@@ -1,6 +1,6 @@
 # Post puppeteer
 
-## How to use
+## Install
 
 These instructions are for Mac. If you're on Windows, you're on your own. If you're on Linux, you're probably fine.
 
@@ -21,6 +21,9 @@ Download this repository anywhere you'd like.
 Initialize the configurations (will live in ~/.post-puppeteer)
 
 `npm install && npm run init` and follow the prompts.
+
+
+## Use It
 
 Write your first post:
 
